@@ -3,12 +3,12 @@ import '../Styles/Login.css';
 import { useNavigate } from 'react-router-dom';
 import { MdEmail, MdLock } from 'react-icons/md';
 
-function Login() {
+function Login({ onLogin }) {
   const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
-
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -21,8 +21,32 @@ function Login() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('Données de connexion soumises:', formData);
-    navigate('/Dashboard');
+    setError('');
+    
+    // Utilisateurs fictifs pour démonstration
+    const users = [
+      { email: 'admin@gsb.fr', password: 'admin123', role: 'admin', name: 'Marie Martin' },
+      { email: 'user@gsb.fr', password: 'user123', role: 'user', name: 'Jean Dupont' }
+    ];
+
+    // Vérification des identifiants
+    const user = users.find(user => user.email === formData.email && user.password === formData.password);
+
+    if (user) {
+      // Connexion réussie
+      console.log('Données de connexion soumises:', formData);
+      if (onLogin) {
+        onLogin(user);
+      }
+      navigate(user.role === 'admin' ? '/admin' : '/dashboard');
+    } else {
+      // Échec de la connexion
+      setError('Identifiants incorrects');
+    }
+  };
+
+  const handleSignIn = () => {
+    navigate('/sign-in');
   };
 
   return (
@@ -34,6 +58,8 @@ function Login() {
             <img src="/user-icon.svg" alt="User Icon" className="avatar-icon" />
           </div>
         </div>
+
+        {error && <div className="error-message">{error}</div>}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
@@ -47,6 +73,7 @@ function Login() {
                 placeholder="Email"
                 value={formData.email}
                 onChange={handleChange}
+                required
               />
             </div>
           </div>
@@ -62,12 +89,15 @@ function Login() {
                 placeholder="Mot de passe"
                 value={formData.password}
                 onChange={handleChange}
+                required
               />
             </div>
           </div>
           
-          <button type="submit" className="login-btn">Connexion</button>
+          <button onClick={handleSubmit} type="submit" className="login-btn">Connexion</button>
         </form>
+        
+        <button onClick={handleSignIn} className="signin-btn">Créer un compte</button>
       </div>
     </div>
   );

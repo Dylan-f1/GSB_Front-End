@@ -3,18 +3,7 @@ import '../Styles/Dashboard.css';
 import Bills from '../Modals/Bills';
 import ProfileModal from '../Modals/ProfileModal';
 import { Line, Bar } from 'react-chartjs-2';
-import { 
-  Chart as ChartJS, 
-  CategoryScale, 
-  LinearScale, 
-  PointElement, 
-  LineElement, 
-  BarElement, 
-  Title, 
-  Tooltip, 
-  Legend,
-  Filler
-} from 'chart.js';
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler } from 'chart.js';
 import { MdDashboard, MdReceipt, MdPerson, MdLogout, MdGridView, MdFilterList } from 'react-icons/md';
 
 // Enregistrer les composants ChartJS nécessaires
@@ -30,15 +19,16 @@ ChartJS.register(
   Filler
 );
 
-// Composant principal Dashboard
-function Dashboard() {
+// Composant principal Dashboard pour les utilisateurs réguliers
+function UserDashboard() {
   const [activePage, setActivePage] = useState('dashboard');
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   // Données utilisateur (fictives pour le moment)
   const currentUser = {
     name: 'Jean Dupont',
-    email: 'jean.dupont@example.com'
+    email: 'jean.dupont@example.com',
+    role: 'user'
   };
 
   // Ouvrir le modal de profil
@@ -86,7 +76,7 @@ function Dashboard() {
     datasets: [
       {
         label: 'Ventes',
-        data: [20, 35, 25, 45, 30, 40, 50],
+        data: [20, 35, 25, 45, 30, 40, 35],
         backgroundColor: 'rgba(54, 162, 235, 0.8)',
       },
     ],
@@ -111,20 +101,22 @@ function Dashboard() {
     <div className="dashboard-content">
       <div className="dashboard-card revenue-card">
         <div className="card-header">
-          <h3>$1250</h3>
+          <h3>1250€</h3>
           <p className="card-subtitle">Revenu hebdomadaire</p>
         </div>
         <div className="chart-container">
           <Line data={lineData} options={lineOptions} />
         </div>
         <div className="card-footer">
-          <button className="details-btn">Détails</button>
+          <button className="details-btn" onClick={() => {
+            setActivePage('bills');
+          }}>Détails</button>
         </div>
       </div>
 
       <div className="dashboard-card performance-card">
         <div className="card-header">
-          <h3>Sales Performance</h3>
+          <h3>Performance des ventes</h3>
         </div>
         <div className="chart-container">
           <Bar data={barData} options={barOptions} />
@@ -175,7 +167,7 @@ function Dashboard() {
             </svg>
           </div>
           <div className="profile-info">
-            <h3>Jean Dupont</h3>
+            <h3>{currentUser.name}</h3>
             <p>Utilisateur</p>
           </div>
         </div>
@@ -195,7 +187,10 @@ function Dashboard() {
         </nav>
         
         <div className="sidebar-footer">
-          <button className="logout-btn"><MdLogout /> Déconnexion</button>
+          <button className="logout-btn" onClick={() => {
+            localStorage.removeItem('token');
+            window.location.href = '/login';
+          }}><MdLogout /> Déconnexion</button>
         </div>
       </div>
 
@@ -230,4 +225,4 @@ function Dashboard() {
   );
 }
 
-export default Dashboard;
+export default UserDashboard; 

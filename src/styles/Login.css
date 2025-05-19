@@ -16,7 +16,7 @@ body, html {
   justify-content: center;
   min-height: 100vh;
   width: 100%;
-  padding: 0;
+  padding: 0 15px;
 }
 
 .login-form-container {
@@ -27,6 +27,7 @@ body, html {
   max-width: 380px;
   color: white;
   position: relative;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .avatar-container {
@@ -46,6 +47,7 @@ body, html {
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 .avatar-icon {
@@ -112,4 +114,88 @@ input {
 
 .login-btn:hover {
   background-color: #4422ee;
+}
+
+.signin-btn {
+  width: 100%;
+  padding: 0.8rem;
+  background-color: transparent;
+  color: white;
+  border: 1px solid white;
+  border-radius: 1em;
+  cursor: pointer;
+  font-size: 1rem;
+  margin-top: 1rem;
+  transition: all 0.3s;
+}
+
+.signin-btn:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Media Queries pour Responsivité */
+@media (max-width: 576px) {
+  .login-form-container {
+    padding: 1.5rem;
+    max-width: 100%;
+  }
+  
+  .avatar-circle {
+    width: 70px;
+    height: 70px;
+  }
+  
+  .avatar-icon {
+    width: 40px;
+    height: 40px;
+  }
+  
+  form {
+    margin-top: 1.5rem;
+  }
+  
+  .form-group {
+    margin-bottom: 1.2rem;
+  }
+  
+  input {
+    padding: 0.8rem;
+    font-size: 0.95rem;
+  }
+  
+  .login-btn, .signin-btn {
+    padding: 0.8rem;
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 400px) {
+  .login-form-container {
+    padding: 1.25rem;
+  }
+  
+  .avatar-circle {
+    width: 60px;
+    height: 60px;
+    top: -30px;
+  }
+  
+  .avatar-icon {
+    width: 35px;
+    height: 35px;
+  }
+  
+  .input-icon {
+    font-size: 1rem;
+  }
+  
+  input {
+    padding: 0.7rem;
+    font-size: 0.9rem;
+  }
+  
+  .login-btn, .signin-btn {
+    padding: 0.7rem;
+    font-size: 0.9rem;
+  }
 }
