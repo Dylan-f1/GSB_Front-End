@@ -3,12 +3,34 @@ import { MdAdd } from 'react-icons/md';
 import AddBillModal from './AddBillModal';
 import '../Styles/Bills.css';
 
+const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MjM0ODc0YzBjMTk2MDUyNjg0ZjAyMCIsInJvbGUiOiJBZG1pbiIsImVtYWlsIjoiRHlsYW5AZ21haWwuY29tIiwiaWF0IjoxNzQ4MjQ0ODE4LCJleHAiOjE3NDgzMzEyMTh9.G9g-SgNDvxTvat5icKLjELQC4UYM5OJeHVHXormzJv0"
+
+
 // Composant pour afficher la liste des factures
 export function BillsList() {
   const [bills, setBills] = useState([]);
   const [selectedBill, setSelectedBill] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const response = await fetch('http://localhost:3000/bills',
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+          });
+        const data = await response.json()
+        setBills(data)
+      } catch (e) {
+        console.error('Error fetching bills:', e)
+      }
+    })()
+  }, [])
   
   const openModal = (bill) => {
     setSelectedBill(bill);
@@ -27,17 +49,23 @@ export function BillsList() {
     setIsAddModalOpen(false);
   };
   
-  const handleSaveBill = async (billData) => {
+  const handleSaveBill = async (formData) => {
     try {
-      // Générer un ID unique pour la nouvelle facture
-      const newId = bills.length > 0 
-        ? String(Math.max(...bills.map(b => parseInt(b.id))) + 1).padStart(4, '0')
-        : '1001';
-      
-      const newBill = {
-        id: newId,
-        ...billData
-      };
+      // Envoyer les données au backend avec FormData pour gérer les fichiers
+      const response = await fetch('http://localhost:3000/bills', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          // Ne pas définir Content-Type pour FormData, le navigateur le fera automatiquement
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP: ${response.status}`);
+      }
+
+      const newBill = await response.json();
       
       // Ajouter la nouvelle facture à la liste
       setBills(prevBills => [newBill, ...prevBills]);
@@ -215,14 +243,14 @@ export default function BillModal({ bill, isOpen, onClose }) {
                     </div>
                   )}
                   
-                  {bill.receipt && (
+                  {bill.Proof && (
                     <div className="detail-item">
-                      <p className="detail-label">Receipt</p>
-                      <div className="receipt-link">
-                        <svg className="receipt-icon" fill="currentColor" viewBox="0 0 20 20">
+                      <p className="detail-label">Proof</p>
+                      <div className="Proof-link">
+                        <svg className="Proof-icon" fill="currentColor" viewBox="0 0 20 20">
                           <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z"></path>
                         </svg>
-                        <span className="receipt-text">View Receipt</span>
+                        <span className="Proof-text">View Proof</span>
                       </div>
                     </div>
                   )}

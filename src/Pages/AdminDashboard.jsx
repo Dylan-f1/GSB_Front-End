@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import '../Styles/AdminDashboard.css';
-import { MdSearch, MdAdd, MdEdit, MdDelete, MdCheck, MdArrowBack } from 'react-icons/md';
+import { MdSearch, MdAdd, MdEdit, MdDelete, MdCheck, MdArrowBack, MdLogout } from 'react-icons/md';
 
 function AdminDashboard() {
   const [activeSection, setActiveSection] = useState('bills');
@@ -80,37 +80,39 @@ function AdminDashboard() {
   
   return (
     <div className="admin-container">
-      <div className="admin-header">
-        <div className="logo">
-          <span className="logo-g">G</span>
-          <span className="logo-s">S</span>
-          <span className="logo-b">B</span>
-          <span className="logo-dot">.</span>
-        </div>
-        
-        <div className="search-container">
-          <div className="search-bar">
-            <MdSearch className="search-icon" />
-            <input type="text" placeholder="Search..." />
-          </div>
-        </div>
-        
-        <div className="user-button">
-          <button className="user-btn">User</button>
-        </div>
-      </div>
-      
       <div className="admin-content">
         <div className="admin-sidebar">
-          <button className="sidebar-btn add-btn">
-            <MdAdd /> ADD BILLS
-          </button>
-          <button className="sidebar-btn update-btn">
-            <MdEdit /> UPDATE BILLS
-          </button>
-          <button className="sidebar-btn delete-btn">
-            <MdDelete /> DELETE
-          </button>
+          <div className="sidebar-header">
+            <div className="logo">
+              <span className="logo-g">G</span>
+              <span className="logo-s">S</span>
+              <span className="logo-b">B</span>
+              <span className="logo-dot">.</span>
+            </div>
+            
+            <div className="search-container">
+              <div className="search-bar">
+                <input type="text" placeholder="Rechercher..." />
+                <MdSearch className="search-icon" />
+              </div>
+            </div>
+            
+            <div className="user-button">
+              <button className="user-btn">User</button>
+            </div>
+          </div>
+          
+          <div className="sidebar-nav">
+            <button className="sidebar-btn add-btn">
+              <MdAdd /> ADD BILLS
+            </button>
+            <button className="sidebar-btn update-btn">
+              <MdEdit /> UPDATE BILLS
+            </button>
+            <button className="sidebar-btn delete-btn">
+              <MdDelete /> DELETE
+            </button>
+          </div>
         </div>
         
         <div className="admin-main">

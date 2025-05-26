@@ -4,15 +4,33 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import '../Styles/AddBillModal.css';
 
+
+const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MjM0ODc0YzBjMTk2MDUyNjg0ZjAyMCIsInJvbGUiOiJBZG1pbiIsImVtYWlsIjoiRHlsYW5AZ21haWwuY29tIiwiaWF0IjoxNzQ4MjQyMjA1LCJleHAiOjE3NDgzMjg2MDV9.fT1FYnVPUWmSQvUoR59r1hPV_gm7899RjJ7COrTcQck"
+
 const AddBillModal = ({ isOpen, onClose, onSave }) => {
   const [billData, setBillData] = useState({
     date: new Date(),
     amount: '',
     description: '',
-    status: 'pending',
-    type: 'expense'
+    type: 'expense',
+    proof: null
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  // Réinitialiser le formulaire quand le modal se ferme
+  React.useEffect(() => {
+    if (!isOpen) {
+      setBillData({
+        date: new Date(),
+        amount: '',
+        description: '',
+        type: 'expense',
+        proof: null
+      });
+      setError('');
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -31,33 +49,72 @@ const AddBillModal = ({ isOpen, onClose, onSave }) => {
     }));
   };
 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Vérifier la taille du fichier (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Le fichier ne doit pas dépasser 5MB');
+        return;
+      }
+      
+      // Vérifier le type de fichier
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'application/pdf'];
+      if (!allowedTypes.includes(file.type)) {
+        setError('Seuls les fichiers JPG, PNG et PDF sont autorisés');
+        return;
+      }
+      
+      setBillData(prev => ({
+        ...prev,
+        proof: file
+      }));
+      setError(''); // Effacer les erreurs précédentes
+    }
+  };
+
   const formatDate = (date) => {
     const day = String(date.getDate()).padStart(2, '0');
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const year = date.getFullYear();
-    return `${day}-${month}-${year}`;
+    return `${year}-${month}-${day}`;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
-    // Formatage exact des données pour correspondre au format attendu par l'API
-    const formattedData = {
-      date: formatDate(billData.date),
-      amount: Number(billData.amount),
-      description: billData.description,
-      status: billData.status,
-      type: billData.type
-    };
-    
-    console.log('Données formatées envoyées:', formattedData);
+    setError('');
     
     try {
-      await onSave(formattedData);
+      // Créer un FormData pour gérer les fichiers
+      const formData = new FormData();
+      formData.append('date', formatDate(billData.date));
+      formData.append('amount', Number(billData.amount));
+      formData.append('description', billData.description);
+      formData.append('status', 'pending');
+      formData.append('type', billData.type);
+      
+      // Ajouter le fichier s'il existe
+      if (billData.proof) {
+        formData.append('proof', billData.proof);
+      }
+      
+      console.log('Données envoyées au backend');
+      
+      await onSave(formData);
+      
+      // Réinitialiser le formulaire
+      setBillData({
+        date: new Date(),
+        amount: '',
+        description: '',
+        type: 'expense',
+        proof: null
+      });
       onClose();  // Fermer le modal seulement si l'opération réussit
     } catch (error) {
       console.error("Erreur lors de l'enregistrement:", error);
+      setError(error.message || "Une erreur est survenue lors de l'enregistrement");
       // Ne pas fermer le modal en cas d'erreur
     } finally {
       setIsSubmitting(false);
@@ -74,6 +131,12 @@ const AddBillModal = ({ isOpen, onClose, onSave }) => {
         </div>
         
         <form onSubmit={handleSubmit} className="add-bill-form">
+          {error && (
+            <div className="error-message">
+              {error}
+            </div>
+          )}
+          
           <div className="form-group date-group">
             <DatePicker
               selected={billData.date}
@@ -112,19 +175,6 @@ const AddBillModal = ({ isOpen, onClose, onSave }) => {
           
           <div className="form-group">
             <select 
-              name="status" 
-              value={billData.status}
-              onChange={handleChange}
-              required
-            >
-              <option value="pending">En attente</option>
-              <option value="paid">Payée</option>
-              <option value="cancelled">Annulée</option>
-            </select>
-          </div>
-          
-          <div className="form-group">
-            <select 
               name="type" 
               value={billData.type}
               onChange={handleChange}
@@ -133,6 +183,40 @@ const AddBillModal = ({ isOpen, onClose, onSave }) => {
               <option value="expense">Dépense</option>
               <option value="income">Revenu</option>
             </select>
+          </div>
+          
+          <div className="form-group">
+            <label htmlFor="proof">Justificatif (optionnel)</label>
+            <div className="file-input-container">
+              <input 
+                type="file" 
+                id="proof"
+                name="proof"
+                accept=".jpg,.jpeg,.png,.pdf"
+                onChange={handleFileChange}
+                className="file-input"
+              />
+              <label htmlFor="proof" className="file-input-label">
+                <svg className="file-icon" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                </svg>
+                {billData.proof ? billData.proof.name : 'Choisir un fichier'}
+              </label>
+            </div>
+            {billData.proof && (
+              <div className="file-info">
+                <span className="file-name">{billData.proof.name}</span>
+                <span className="file-size">({(billData.proof.size / 1024 / 1024).toFixed(2)} MB)</span>
+                <button 
+                  type="button" 
+                  className="remove-file-btn"
+                  onClick={() => setBillData(prev => ({ ...prev, proof: null }))}
+                >
+                  ×
+                </button>
+              </div>
+            )}
+            <small className="file-help">JPG, PNG ou PDF - Max 5MB</small>
           </div>
           
           <div className="form-actions">
