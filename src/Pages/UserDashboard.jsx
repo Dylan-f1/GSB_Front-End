@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../Styles/Dashboard.css';
-import Bills from '../Modals/Bills';
+import { BillsList } from '../Modals/Bills';
 import ProfileModal from '../Modals/ProfileModal';
 import { Line, Bar } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler } from 'chart.js';
-import { MdDashboard, MdReceipt, MdPerson, MdLogout, MdGridView, MdFilterList } from 'react-icons/md';
+import { MdDashboard, MdReceipt, MdPerson, MdLogout, MdGridView } from 'react-icons/md';
 
 // Enregistrer les composants ChartJS nécessaires
 ChartJS.register(
@@ -24,12 +24,12 @@ function UserDashboard() {
   const [activePage, setActivePage] = useState('dashboard');
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
-  // Données utilisateur (fictives pour le moment)
-  const currentUser = {
+  // État pour les données utilisateur
+  const [userData, setUserData] = useState({
     name: 'Jean Dupont',
     email: 'jean.dupont@example.com',
     role: 'user'
-  };
+  });
 
   // Ouvrir le modal de profil
   const openProfileModal = () => {
@@ -39,6 +39,16 @@ function UserDashboard() {
   // Fermer le modal de profil
   const closeProfileModal = () => {
     setIsProfileModalOpen(false);
+  };
+
+  // Mettre à jour les données utilisateur
+  const handleUpdateUserData = (updatedUserData) => {
+    setUserData(prevData => ({
+      ...prevData,
+      ...updatedUserData
+    }));
+    console.log('Données utilisateur mises à jour:', updatedUserData);
+    closeProfileModal();
   };
 
   // Données pour le graphique linéaire
@@ -132,7 +142,7 @@ function UserDashboard() {
   const renderContent = () => {
     switch(activePage) {
       case 'bills':
-        return <Bills />;
+        return <BillsList />;
       case 'profile':
         // Au lieu d'afficher la page profil, on ouvre le modal
         // et on affiche le dashboard
@@ -167,8 +177,8 @@ function UserDashboard() {
             </svg>
           </div>
           <div className="profile-info">
-            <h3>{currentUser.name}</h3>
-            <p>Utilisateur</p>
+            <h3>{userData.name}</h3>
+            <p>{userData.role === 'admin' ? 'Administrateur' : 'Utilisateur'}</p>
           </div>
         </div>
         
@@ -219,7 +229,8 @@ function UserDashboard() {
             setActivePage('dashboard');
           }
         }} 
-        currentUser={currentUser} 
+        onSave={handleUpdateUserData}
+        currentUser={userData} 
       />
     </div>
   );
