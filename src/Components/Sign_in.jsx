@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import '../Styles/Sign_in.css';
 import { useNavigate } from 'react-router-dom';
 import { MdPerson, MdEmail } from 'react-icons/md';
-import { FaUser, FaLock } from 'react-icons/fa';
+import { FaLock } from 'react-icons/fa';
+
+localStorage.setItem('token', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MjM0ODc0YzBjMTk2MDUyNjg0ZjAyMCIsInJvbGUiOiJBZG1pbiIsImVtYWlsIjoiRHlsYW5AZ21haWwuY29tIiwiaWF0IjoxNzQ4MzQ3MDU3LCJleHAiOjE3NDg0MzM0NTd9.DEh3LgtbYUH4yigjFVRyBfGgBDOWsUxHAcwYfUYOokQ');
 
 function SignIn() {
   const [formData, setFormData] = useState({
     name: '',
-    surname: '',
     email: '',
     password: ''
   });   
@@ -49,21 +50,6 @@ function SignIn() {
                 name="name"
                 placeholder="Prénom"
                 value={formData.name}
-                onChange={handleChange}
-              />
-            </div>
-          </div>
-          
-          <div className="form-group">
-            <label htmlFor="signin-surname">Nom</label>
-            <div className="input-with-icon">
-              <FaUser className="input-icon" />
-              <input
-                type="text"
-                id="signin-surname"
-                name="surname"
-                placeholder="Nom"
-                value={formData.surname}
                 onChange={handleChange}
               />
             </div>

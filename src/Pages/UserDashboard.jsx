@@ -6,7 +6,7 @@ import { Line, Bar } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler } from 'chart.js';
 import { MdDashboard, MdReceipt, MdPerson, MdLogout, MdGridView } from 'react-icons/md';
 
-const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MjM0ODc0YzBjMTk2MDUyNjg0ZjAyMCIsInJvbGUiOiJBZG1pbiIsImVtYWlsIjoiRHlsYW5AZ21haWwuY29tIiwiaWF0IjoxNzQ4MjQyMjA1LCJleHAiOjE3NDgzMjg2MDV9.fT1FYnVPUWmSQvUoR59r1hPV_gm7899RjJ7COrTcQck"
+localStorage.setItem('token', "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MjM0ODc0YzBjMTk2MDUyNjg0ZjAyMCIsInJvbGUiOiJBZG1pbiIsImVtYWlsIjoiRHlsYW5AZ21haWwuY29tIiwiaWF0IjoxNzQ4MzQ3MDU3LCJleHAiOjE3NDg0MzM0NTd9.DEh3LgtbYUH4yigjFVRyBfGgBDOWsUxHAcwYfUYOokQ")
 
 // Enregistrer les composants ChartJS nécessaires
 ChartJS.register(
@@ -144,7 +144,7 @@ function UserDashboard() {
   const renderContent = () => {
     switch(activePage) {
       case 'bills':
-        return <BillsList />;
+        return <BillsList userRole={userData.role} />;
       case 'profile':
         // Au lieu d'afficher la page profil, on ouvre le modal
         // et on affiche le dashboard

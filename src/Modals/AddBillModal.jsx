@@ -5,13 +5,14 @@ import 'react-datepicker/dist/react-datepicker.css';
 import '../Styles/AddBillModal.css';
 
 
-const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MjM0ODc0YzBjMTk2MDUyNjg0ZjAyMCIsInJvbGUiOiJBZG1pbiIsImVtYWlsIjoiRHlsYW5AZ21haWwuY29tIiwiaWF0IjoxNzQ4MjQyMjA1LCJleHAiOjE3NDgzMjg2MDV9.fT1FYnVPUWmSQvUoR59r1hPV_gm7899RjJ7COrTcQck"
+localStorage.setItem('token', "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MjM0ODc0YzBjMTk2MDUyNjg0ZjAyMCIsInJvbGUiOiJBZG1pbiIsImVtYWlsIjoiRHlsYW5AZ21haWwuY29tIiwiaWF0IjoxNzQ4MzQ3MDU3LCJleHAiOjE3NDg0MzM0NTd9.DEh3LgtbYUH4yigjFVRyBfGgBDOWsUxHAcwYfUYOokQ")
 
 const AddBillModal = ({ isOpen, onClose, onSave }) => {
   const [billData, setBillData] = useState({
     date: new Date(),
     amount: '',
     description: '',
+    merchant: '',
     type: 'expense',
     proof: null
   });
@@ -25,6 +26,7 @@ const AddBillModal = ({ isOpen, onClose, onSave }) => {
         date: new Date(),
         amount: '',
         description: '',
+        merchant: '',
         type: 'expense',
         proof: null
       });
@@ -91,6 +93,7 @@ const AddBillModal = ({ isOpen, onClose, onSave }) => {
       formData.append('date', formatDate(billData.date));
       formData.append('amount', Number(billData.amount));
       formData.append('description', billData.description);
+      formData.append('merchant', billData.merchant);
       formData.append('status', 'pending');
       formData.append('type', billData.type);
       
@@ -108,6 +111,7 @@ const AddBillModal = ({ isOpen, onClose, onSave }) => {
         date: new Date(),
         amount: '',
         description: '',
+        merchant: '',
         type: 'expense',
         proof: null
       });
@@ -163,6 +167,17 @@ const AddBillModal = ({ isOpen, onClose, onSave }) => {
           </div>
           
           <div className="form-group">
+            <input 
+              type="text" 
+              name="merchant" 
+              placeholder="Nom du marchand" 
+              value={billData.merchant}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          
+          <div className="form-group">
             <textarea 
               name="description" 
               placeholder="Description de la facture" 
@@ -171,18 +186,6 @@ const AddBillModal = ({ isOpen, onClose, onSave }) => {
               rows={4}
               required
             ></textarea>
-          </div>
-          
-          <div className="form-group">
-            <select 
-              name="type" 
-              value={billData.type}
-              onChange={handleChange}
-              required
-            >
-              <option value="expense">Dépense</option>
-              <option value="income">Revenu</option>
-            </select>
           </div>
           
           <div className="form-group">

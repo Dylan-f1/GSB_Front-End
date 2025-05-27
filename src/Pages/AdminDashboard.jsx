@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import '../Styles/AdminDashboard.css';
+import { BillsList } from '../Modals/Bills';
 import { MdSearch, MdAdd, MdEdit, MdDelete, MdCheck, MdArrowBack, MdLogout } from 'react-icons/md';
 
 function AdminDashboard() {
@@ -101,23 +102,10 @@ function AdminDashboard() {
               <button className="user-btn">User</button>
             </div>
           </div>
-          
-          <div className="sidebar-nav">
-            <button className="sidebar-btn add-btn">
-              <MdAdd /> ADD BILLS
-            </button>
-            <button className="sidebar-btn update-btn">
-              <MdEdit /> UPDATE BILLS
-            </button>
-            <button className="sidebar-btn delete-btn">
-              <MdDelete /> DELETE
-            </button>
-          </div>
         </div>
         
         <div className="admin-main">
-          {renderBillsList()}
-          {renderBillsDetail()}
+          <BillsList userRole="admin" />
         </div>
       </div>
     </div>

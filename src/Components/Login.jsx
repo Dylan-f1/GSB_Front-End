@@ -3,7 +3,10 @@ import '../Styles/Login.css';
 import { useNavigate } from 'react-router-dom';
 import { MdEmail, MdLock } from 'react-icons/md';
 
+localStorage.setItem('token', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MjM0ODc0YzBjMTk2MDUyNjg0ZjAyMCIsInJvbGUiOiJBZG1pbiIsImVtYWlsIjoiRHlsYW5AZ21haWwuY29tIiwiaWF0IjoxNzQ4MzQ3MDU3LCJleHAiOjE3NDg0MzM0NTd9.DEh3LgtbYUH4yigjFVRyBfGgBDOWsUxHAcwYfUYOokQ');
+
 function Login({ onLogin }) {
+
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -22,12 +25,6 @@ function Login({ onLogin }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     setError('');
-    
-    // Utilisateurs fictifs pour démonstration
-    const users = [
-      { email: 'admin@gsb.fr', password: 'admin123', role: 'admin', name: 'Marie Martin' },
-      { email: 'user@gsb.fr', password: 'user123', role: 'user', name: 'Jean Dupont' }
-    ];
 
     // Vérification des identifiants
     const user = users.find(user => user.email === formData.email && user.password === formData.password);

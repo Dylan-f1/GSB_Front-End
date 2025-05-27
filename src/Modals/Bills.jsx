@@ -1,38 +1,74 @@
 import { useEffect, useRef, useState } from 'react';
 import { MdAdd } from 'react-icons/md';
 import AddBillModal from './AddBillModal';
+import EditBillModal from './EditBillModal';
 import '../Styles/Bills.css';
 
-const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MjM0ODc0YzBjMTk2MDUyNjg0ZjAyMCIsInJvbGUiOiJBZG1pbiIsImVtYWlsIjoiRHlsYW5AZ21haWwuY29tIiwiaWF0IjoxNzQ4MjQ0ODE4LCJleHAiOjE3NDgzMzEyMTh9.G9g-SgNDvxTvat5icKLjELQC4UYM5OJeHVHXormzJv0"
+localStorage.setItem('token', "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MjM0ODc0YzBjMTk2MDUyNjg0ZjAyMCIsInJvbGUiOiJBZG1pbiIsImVtYWlsIjoiRHlsYW5AZ21haWwuY29tIiwiaWF0IjoxNzQ4MzQ3MDU3LCJleHAiOjE3NDg0MzM0NTd9.DEh3LgtbYUH4yigjFVRyBfGgBDOWsUxHAcwYfUYOokQ")
 
 
 // Composant pour afficher la liste des factures
-export function BillsList() {
+export function BillsList({ userRole = 'user' }) {
   const [bills, setBills] = useState([]);
   const [selectedBill, setSelectedBill] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [billToEdit, setBillToEdit] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    (async () => {
+    const fetchBills = async () => {
       try {
-        const response = await fetch('http://localhost:3000/bills',
-          {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`,
-            },
-          });
-        const data = await response.json()
-        setBills(data)
+        setLoading(true);
+        setError(null);
+        
+        // Récupérer le token depuis localStorage ou utiliser le token par défaut
+        const storedToken = localStorage.getItem('token');
+        const authToken = storedToken || token;
+        
+        const response = await fetch('http://localhost:3000/bills', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`,
+          },
+        });
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            throw new Error('Token d\'authentification invalide ou expiré');
+          }
+          throw new Error(`Erreur HTTP: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        // S'assurer que data est un tableau
+        if (Array.isArray(data)) {
+          setBills(data);
+        } else if (data && Array.isArray(data.bills)) {
+          setBills(data.bills);
+        } else {
+          console.warn('Format de données inattendu:', data);
+          setBills([]);
+        }
+        
       } catch (e) {
-        console.error('Error fetching bills:', e)
+        console.error('Erreur lors de la récupération des factures:', e);
+        setError(e.message);
+        setBills([]); // S'assurer que bills reste un tableau même en cas d'erreur
+      } finally {
+        setLoading(false);
       }
-    })()
-  }, [])
+    };
+
+    fetchBills();
+  }, []);
   
   const openModal = (bill) => {
+    console.log('Bill data:', bill); // Debug: voir les données de la facture
     setSelectedBill(bill);
     setIsModalOpen(true);
   };
@@ -47,6 +83,45 @@ export function BillsList() {
   
   const closeAddModal = () => {
     setIsAddModalOpen(false);
+  };
+
+  const openEditModal = (bill) => {
+    setBillToEdit(bill);
+    setIsEditModalOpen(true);
+  };
+
+  const closeEditModal = () => {
+    setIsEditModalOpen(false);
+    setBillToEdit(null);
+  };
+
+  const handleDeleteBill = async (billId) => {
+    if (window.confirm('Êtes-vous sûr de vouloir supprimer cette facture ?')) {
+      try {
+        const storedToken = localStorage.getItem('token');
+        const authToken = storedToken || token;
+        
+        const response = await fetch(`http://localhost:3000/bills/${billId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(`Erreur HTTP: ${response.status}`);
+        }
+
+        // Supprimer la facture de la liste
+        setBills(prevBills => prevBills.filter(bill => (bill._id || bill.id) !== billId));
+        
+        console.log('Facture supprimée:', billId);
+        
+      } catch (error) {
+        console.error('Erreur lors de la suppression de la facture:', error);
+        alert('Erreur lors de la suppression de la facture');
+      }
+    }
   };
   
   const handleSaveBill = async (formData) => {
@@ -80,6 +155,31 @@ export function BillsList() {
       throw error;
     }
   };
+
+  const handleUpdateBill = async (updatedBill) => {
+    try {
+      // Pour l'instant, on simule la mise à jour côté client
+      // Vous pouvez implémenter l'appel API PUT/PATCH ici plus tard
+      console.log('Facture mise à jour:', updatedBill);
+      
+      // Mettre à jour la facture dans la liste locale
+      setBills(prevBills => 
+        prevBills.map(bill => 
+          (bill._id || bill.id) === (updatedBill._id || updatedBill.id) ? updatedBill : bill
+        )
+      );
+      
+      // Fermer le modal
+      closeEditModal();
+      
+      // Optionnel: afficher un message de succès
+      alert('Facture mise à jour avec succès !');
+      
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour de la facture:', error);
+      throw error;
+    }
+  };
   
   return (
     <div className="bills-container">
@@ -93,31 +193,97 @@ export function BillsList() {
         </button>
       </div>
       
-      {bills.length === 0 ? (
+      {loading ? (
+        <div className="loading-message">
+          <p>Chargement des factures...</p>
+        </div>
+      ) : error ? (
+        <div className="error-message">
+          <p>Erreur: {error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="retry-button"
+          >
+            Réessayer
+          </button>
+        </div>
+      ) : bills.length === 0 ? (
         <p className="no-bills-message">Aucune facture disponible</p>
       ) : (
-        <div className="bills-list">
-          {bills.map(bill => (
-            <div 
-              key={bill.id} 
-              className="bill-item"
-              onClick={() => openModal(bill)}
-            >
-              <div className="bill-header">
-                <span className="bill-id">#{bill.id}</span>
-                <span className={`bill-status status-${bill.status.toLowerCase()}`}>
-                  {bill.status}
-                </span>
-              </div>
-              
-              <div className="bill-info">
-                <div className="bill-type">{bill.type}</div>
-                <div className="bill-date">{new Date(bill.date).toLocaleDateString()}</div>
-              </div>
-              
-              <div className="bill-amount">${bill.amount.toFixed(2)}</div>
-            </div>
-          ))}
+        <div className="bills-table-container">
+          <table className="bills-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {bills.map(bill => (
+                <tr key={bill._id || bill.id} className="bill-row">
+                  <td className="bill-id">{bill._id || bill.id}</td>
+                  <td className="bill-date">
+                    {(() => {
+                      if (!bill.date) return 'No date';
+                      
+                      // Essayer de parser la date
+                      const date = new Date(bill.date);
+                      
+                      // Si la date est invalide, afficher la date brute
+                      if (isNaN(date.getTime())) {
+                        return bill.date;
+                      }
+                      
+                      // Sinon, formater la date
+                      return date.toLocaleDateString('fr-FR');
+                    })()}
+                  </td>
+                  <td className="bill-type">{bill.type}</td>
+                  <td className="bill-amount">${bill.amount.toFixed(2)}</td>
+                  <td>
+                    <span className={`bill-status status-${bill.status.toLowerCase()}`}>
+                      {bill.status}
+                    </span>
+                  </td>
+                  <td className="actions-cell">
+                    <button 
+                      className="view-button"
+                      onClick={() => openModal(bill)}
+                    >
+                      View
+                    </button>
+                    {userRole === 'admin' && (
+                      <>
+                        <button 
+                          className="edit-button"
+                          onClick={() => openEditModal(bill)}
+                          title="Modifier"
+                        >
+                          <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708L10.5 8.207l-3-3L12.146.146zM11.207 9l-3-3L2.5 11.707V14.5a.5.5 0 0 0 .5.5h2.793L11.207 9z"/>
+                          </svg>
+                        </button>
+                        <button 
+                          className="delete-button"
+                          onClick={() => handleDeleteBill(bill._id || bill.id)}
+                          title="Supprimer"
+                        >
+                          <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                            <path fillRule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+                          </svg>
+                        </button>
+                      </>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
       
@@ -135,9 +301,21 @@ export function BillsList() {
         onClose={closeAddModal}
         onSave={handleSaveBill}
       />
-    </div>
+
+      {/* Modal de modification de facture */}
+      {billToEdit && (
+        <EditBillModal
+          isOpen={isEditModalOpen}
+          onClose={closeEditModal}
+          bill={billToEdit}
+          onSave={handleUpdateBill}
+        />
+      )}
+        </div>
   );
 }
+
+ 
 
 // Composant modal existant
 export default function BillModal({ bill, isOpen, onClose }) {
@@ -172,6 +350,10 @@ export default function BillModal({ bill, isOpen, onClose }) {
 
   // Don't render anything if modal is closed or no bill data
   if (!isOpen || !bill) return null;
+
+  // Debug: afficher la structure de la facture
+  console.log('Bill object in modal:', bill);
+  console.log('Bill keys:', Object.keys(bill));
 
   // Function to determine status badge color
   const getStatusClasses = (status) => {
@@ -218,11 +400,29 @@ export default function BillModal({ bill, isOpen, onClose }) {
                   <div className="details-grid">
                     <div className="detail-item">
                       <p className="detail-label">Bill ID</p>
-                      <p className="detail-value">#{bill.id}</p>
+                      <p className="detail-value">
+                        {bill.id || bill._id || bill.billId || 'No ID'}
+                        {/* Debug - Toutes les clés: {JSON.stringify(Object.keys(bill))} */}
+                      </p>
                     </div>
                     <div className="detail-item">
                       <p className="detail-label">Date</p>
-                      <p className="detail-value">{new Date(bill.date).toLocaleDateString()}</p>
+                      <p className="detail-value">
+                        {(() => {
+                          if (!bill.date) return 'No date';
+                          
+                          // Essayer de parser la date
+                          const date = new Date(bill.date);
+                          
+                          // Si la date est invalide, afficher la date brute
+                          if (isNaN(date.getTime())) {
+                            return bill.date;
+                          }
+                          
+                          // Sinon, formater la date
+                          return date.toLocaleDateString('fr-FR');
+                        })()}
+                      </p>
                     </div>
                   </div>
                   
@@ -243,14 +443,25 @@ export default function BillModal({ bill, isOpen, onClose }) {
                     </div>
                   )}
                   
-                  {bill.Proof && (
+                  {(bill.proof || bill.Proof) && (
                     <div className="detail-item">
                       <p className="detail-label">Proof</p>
-                      <div className="Proof-link">
-                        <svg className="Proof-icon" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z"></path>
-                        </svg>
-                        <span className="Proof-text">View Proof</span>
+                      <div className="proof-link">
+                        {(bill.proof || bill.Proof).startsWith('http') ? (
+                          <a href={bill.proof || bill.Proof} target="_blank" rel="noopener noreferrer" className="proof-link-text">
+                            <svg className="proof-icon" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                            </svg>
+                            Voir l'image
+                          </a>
+                        ) : (
+                          <div className="proof-info">
+                            <svg className="proof-icon" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                            </svg>
+                            <span className="proof-text">{bill.proof || bill.Proof}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}

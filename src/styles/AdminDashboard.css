@@ -314,6 +314,8 @@ body {
   background-color: #212b36;
   width: calc(100% - 300px);
   min-width: 0;
+  justify-content: center;
+  align-items: flex-start;
 }
 
 /* Bills view */
