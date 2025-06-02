@@ -13,7 +13,7 @@
 }
 
 .profile-modal {
-  background-color: white;
+  background-color: #1a2027;
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   width: 90%;
@@ -29,7 +29,7 @@
   border-bottom: 1px solid #eee;
   position: sticky;
   top: 0;
-  background-color: white;
+  background-color: #1a2027;
   z-index: 10;
 }
 
@@ -46,7 +46,7 @@
 }
 
 .back-button:hover {
-  background-color: #f5f5f5;
+  background-color: #1a2027;
 }
 
 .profile-header h2 {
@@ -61,8 +61,10 @@
 
 .profile-avatar-container {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
   margin-bottom: 20px;
+  text-align: center;
 }
 
 .profile-avatar-large {
@@ -75,11 +77,33 @@
   justify-content: center;
   overflow: hidden;
   color: #757575;
+  margin-bottom: 15px;
 }
 
 .profile-avatar-large svg {
   width: 80%;
   height: 80%;
+}
+
+.profile-user-info h3 {
+  margin: 0 0 5px 0;
+  font-size: 1.3rem;
+  color: #333;
+}
+
+.profile-user-info .user-role {
+  margin: 0 0 5px 0;
+  font-size: 0.9rem;
+  color: #4caf50;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.profile-user-info .user-email {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #666;
 }
 
 .profile-form {
@@ -141,12 +165,12 @@
 }
 
 .cancel-button {
-  background-color: #f1f1f1;
+  background-color: #1a2027;
   color: #333;
 }
 
 .cancel-button:hover {
-  background-color: #e0e0e0;
+  background-color: #1a2027;
 }
 
 .save-button:disabled, .cancel-button:disabled {

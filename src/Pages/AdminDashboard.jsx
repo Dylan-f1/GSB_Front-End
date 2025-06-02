@@ -1,7 +1,23 @@
-import React, { useState } from 'react';
-import '../Styles/AdminDashboard.css';
+import React, { useState, useEffect } from 'react';
+import '../styles/AdminDashboard.css';
 import { BillsList } from '../Modals/Bills';
 import { MdSearch, MdAdd, MdEdit, MdDelete, MdCheck, MdArrowBack, MdLogout } from 'react-icons/md';
+import { useNavigate } from 'react-router-dom';
+
+// Fonction pour décoder un JWT
+const decodeJWT = (token) => {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.error('Erreur lors du décodage du JWT:', error);
+    return null;
+  }
+};
 
 function AdminDashboard() {
   const [activeSection, setActiveSection] = useState('bills');
@@ -10,6 +26,9 @@ function AdminDashboard() {
     'Big Mac': false,
     'Nuggets': false
   });
+  const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState(null);
+  const navigate = useNavigate();
 
   const toggleBillSelection = (billName) => {
     setSelectedBills(prev => ({
@@ -17,6 +36,85 @@ function AdminDashboard() {
       [billName]: !prev[billName]
     }));
   };
+
+  // Fonction de déconnexion
+  const handleLogout = () => {
+    console.log('Déconnexion admin...');
+    localStorage.removeItem('token');
+    navigate('/');
+  };
+
+  // Vérifier l'authentification et le rôle admin
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        console.log('Vérification token admin:', token ? 'Présent' : 'Absent');
+        
+        if (!token) {
+          console.log('Pas de token, redirection vers login');
+          navigate('/');
+          return;
+        }
+
+        // Décoder le JWT pour vérifier le rôle admin
+        const decodedToken = decodeJWT(token);
+        console.log('Token admin décodé:', decodedToken);
+
+        if (decodedToken) {
+          const role = decodedToken.role || decodedToken.Role || 'user';
+          console.log('Rôle utilisateur depuis token:', role);
+          setUserRole(role);
+          
+          // Vérifier si l'utilisateur est admin
+          if (role != 'admin' && role != 'Admin') {
+            console.log('Accès refusé: utilisateur non-admin selon token');
+            navigate('/dashboard'); // Rediriger vers le dashboard utilisateur
+            return;
+          }
+        } else {
+          console.log('Impossible de décoder le token, redirection vers login');
+          navigate('/');
+          return;
+        }
+        
+        try {
+
+          if (response.ok) {
+            const data = await response.json();
+            const user = data.user || data;
+            const role = user.role || user.Role || 'user';
+            
+            console.log('Rôle utilisateur depuis API:', role);
+            setUserRole(role);
+            
+            // Vérifier si l'utilisateur est admin
+            if (role !== 'admin' && role !== 'Admin') {
+              console.log('Accès refusé: utilisateur non-admin');
+              navigate('/dashboard'); // Rediriger vers le dashboard utilisateur
+              return;
+            }
+            return; // Succès
+          } else if (response.status === 401) {
+            console.log('Token invalide, redirection vers login');
+            localStorage.removeItem('token');
+            navigate('/');
+            return;
+          }
+        } catch (apiError) {
+          console.log('Endpoint /auth/me non disponible, utilisation du token JWT:', apiError.message);
+        }
+      } catch (error) {
+        console.error('Erreur lors de la vérification d\'authentification:', error);
+        navigate('/');
+        return;
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, [navigate]);
 
   const renderBillsList = () => {
     return (
@@ -79,6 +177,18 @@ function AdminDashboard() {
     );
   };
   
+  // Afficher un indicateur de chargement pendant la vérification
+  if (loading) {
+    return (
+      <div className="admin-container">
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Vérification des permissions...</p>
+        </div>
+      </div>
+    );
+  }
+  
   return (
     <div className="admin-container">
       <div className="admin-content">
@@ -99,7 +209,13 @@ function AdminDashboard() {
             </div>
             
             <div className="user-button">
-              <button className="user-btn">User</button>
+              <button className="user-btn">Admin</button>
+            </div>
+
+            <div className="sidebar-footer">
+              <button className="logout-btn" onClick={handleLogout}>
+                <MdLogout /> Déconnexion
+              </button>
             </div>
           </div>
         </div>

@@ -72,7 +72,7 @@ const ProfileModal = ({ isOpen, onClose, onSave, currentUser }) => {
           <h2>Modifier le profil</h2>
         </div>
 
-        <div className="profile-content">
+                  <div className="profile-content">
           <div className="profile-avatar-container">
             <div className="profile-avatar-large">
               <svg 
@@ -81,6 +81,11 @@ const ProfileModal = ({ isOpen, onClose, onSave, currentUser }) => {
               >
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" />
               </svg>
+            </div>
+            <div className="profile-user-info">
+              <h3>{currentUser?.name || 'Utilisateur'}</h3>
+              <p className="user-role">{currentUser?.role === 'admin' ? 'Administrateur' : 'Utilisateur'}</p>
+              <p className="user-email">{currentUser?.email}</p>
             </div>
           </div>
 

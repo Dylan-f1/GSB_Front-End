@@ -2,10 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { MdAdd } from 'react-icons/md';
 import AddBillModal from './AddBillModal';
 import EditBillModal from './EditBillModal';
-import '../Styles/Bills.css';
-
-localStorage.setItem('token', "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MjM0ODc0YzBjMTk2MDUyNjg0ZjAyMCIsInJvbGUiOiJBZG1pbiIsImVtYWlsIjoiRHlsYW5AZ21haWwuY29tIiwiaWF0IjoxNzQ4MzQ3MDU3LCJleHAiOjE3NDg0MzM0NTd9.DEh3LgtbYUH4yigjFVRyBfGgBDOWsUxHAcwYfUYOokQ")
-
+import '../styles/Bills.css';
 
 // Composant pour afficher la liste des factures
 export function BillsList({ userRole = 'user' }) {
@@ -24,17 +21,25 @@ export function BillsList({ userRole = 'user' }) {
         setLoading(true);
         setError(null);
         
-        // Récupérer le token depuis localStorage ou utiliser le token par défaut
-        const storedToken = localStorage.getItem('token');
-        const authToken = storedToken || token;
+        // Récupérer le token depuis localStorage
+        const authToken = localStorage.getItem('token');
+        
+        if (!authToken) {
+          throw new Error('Token d\'authentification manquant');
+        }
+        
+        console.log('Token utilisé pour bills:', authToken ? 'Présent' : 'Absent');
         
         const response = await fetch('http://localhost:3000/bills', {
-          method: 'GET',
+          method: 'GET',  
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${authToken}`,
           },
         });
+        
+
+        console.log('Statut réponse bills:', response.status);
 
         if (!response.ok) {
           if (response.status === 401) {
@@ -44,6 +49,7 @@ export function BillsList({ userRole = 'user' }) {
         }
 
         const data = await response.json();
+        console.log('Données factures reçues:', data);
         
         // S'assurer que data est un tableau
         if (Array.isArray(data)) {
@@ -98,8 +104,11 @@ export function BillsList({ userRole = 'user' }) {
   const handleDeleteBill = async (billId) => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer cette facture ?')) {
       try {
-        const storedToken = localStorage.getItem('token');
-        const authToken = storedToken || token;
+        const authToken = localStorage.getItem('token');
+        
+        if (!authToken) {
+          throw new Error('Token d\'authentification manquant');
+        }
         
         const response = await fetch(`http://localhost:3000/bills/${billId}`, {
           method: 'DELETE',
@@ -124,37 +133,7 @@ export function BillsList({ userRole = 'user' }) {
     }
   };
   
-  const handleSaveBill = async (formData) => {
-    try {
-      // Envoyer les données au backend avec FormData pour gérer les fichiers
-      const response = await fetch('http://localhost:3000/bills', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          // Ne pas définir Content-Type pour FormData, le navigateur le fera automatiquement
-        },
-        body: formData
-      });
-
-      if (!response.ok) {
-        throw new Error(`Erreur HTTP: ${response.status}`);
-      }
-
-      const newBill = await response.json();
-      
-      // Ajouter la nouvelle facture à la liste
-      setBills(prevBills => [newBill, ...prevBills]);
-      
-      console.log('Nouvelle facture ajoutée:', newBill);
-      
-      // Fermer le modal
-      closeAddModal();
-      
-    } catch (error) {
-      console.error('Erreur lors de l\'ajout de la facture:', error);
-      throw error;
-    }
-  };
+  
 
   const handleUpdateBill = async (updatedBill) => {
     try {
@@ -299,7 +278,6 @@ export function BillsList({ userRole = 'user' }) {
       <AddBillModal
         isOpen={isAddModalOpen}
         onClose={closeAddModal}
-        onSave={handleSaveBill}
       />
 
       {/* Modal de modification de facture */}
@@ -308,7 +286,6 @@ export function BillsList({ userRole = 'user' }) {
           isOpen={isEditModalOpen}
           onClose={closeEditModal}
           bill={billToEdit}
-          onSave={handleUpdateBill}
         />
       )}
         </div>

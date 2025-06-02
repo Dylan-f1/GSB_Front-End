@@ -2,10 +2,7 @@ import React, { useState } from 'react';
 import { MdCalendarToday, MdClose, MdCheck } from 'react-icons/md';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import '../Styles/AddBillModal.css';
-
-
-localStorage.setItem('token', "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MjM0ODc0YzBjMTk2MDUyNjg0ZjAyMCIsInJvbGUiOiJBZG1pbiIsImVtYWlsIjoiRHlsYW5AZ21haWwuY29tIiwiaWF0IjoxNzQ4MzQ3MDU3LCJleHAiOjE3NDg0MzM0NTd9.DEh3LgtbYUH4yigjFVRyBfGgBDOWsUxHAcwYfUYOokQ")
+import '../styles/AddBillModal.css';
 
 const AddBillModal = ({ isOpen, onClose, onSave }) => {
   const [billData, setBillData] = useState({
@@ -18,6 +15,7 @@ const AddBillModal = ({ isOpen, onClose, onSave }) => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  
 
   // Réinitialiser le formulaire quand le modal se ferme
   React.useEffect(() => {
@@ -82,29 +80,83 @@ const AddBillModal = ({ isOpen, onClose, onSave }) => {
     return `${year}-${month}-${day}`;
   };
 
+  const handleSaveBill = async (formData) => {
+    try {
+      // Récupérer le token depuis localStorage
+      const token = localStorage.getItem('token');
+      console.log("formData dylan", formData);
+      if (!token) {
+        throw new Error('Token d\'authentification manquant');
+      }
+      
+      // Envoyer les données au backend avec FormData pour gérer les fichiers
+      const response = await fetch('http://localhost:3000/bills', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          // Ne pas définir Content-Type pour FormData, le navigateur le fera automatiquement
+        },
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP: ${response.status}`);
+      }
+
+      const newBill = await response.json();
+      console.log('Nouvelle facture ajoutée:', newBill);
+      
+      // Cette partie sera gérée par le composant parent
+      return newBill;
+      
+    } catch (error) {
+      console.error('Erreur lors de l\'ajout de la facture:', error);
+      throw error;
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError('');
     
     try {
+      // Vérifier que le fichier justificatif est présent (obligatoire maintenant)
+      if (!billData.proof) {
+        setError('Le justificatif est obligatoire');
+        setIsSubmitting(false);
+        return;
+      }
+
       // Créer un FormData pour gérer les fichiers
       const formData = new FormData();
-      formData.append('date', formatDate(billData.date));
-      formData.append('amount', Number(billData.amount));
-      formData.append('description', billData.description);
-      formData.append('merchant', billData.merchant);
-      formData.append('status', 'pending');
-      formData.append('type', billData.type);
       
-      // Ajouter le fichier s'il existe
-      if (billData.proof) {
-        formData.append('proof', billData.proof);
+      // Préparer les métadonnées
+      const metadata = {
+        date: formatDate(billData.date),
+        amount: Number(billData.amount),
+        description: billData.description,
+        merchant: billData.merchant,
+        status: 'pending',
+        type: billData.type
+      };
+      
+      // Ajouter les métadonnées en tant que JSON stringifié
+      formData.append('metadata', JSON.stringify(metadata));
+      
+      // Ajouter le fichier avec la clé "proof"
+      formData.append('proof', billData.proof);
+      
+      console.log('Métadonnées envoyées:', metadata);
+      console.log('Fichier envoyé:', billData.proof.name);
+      
+      // Si onSave est fourni, l'utiliser (pour la compatibilité avec Bills.jsx)
+      if (onSave) {
+        await onSave(formData);
+      } else {
+        // Sinon, utiliser la fonction locale
+        await handleSaveBill(formData);
       }
-      
-      console.log('Données envoyées au backend');
-      
-      await onSave(formData);
       
       // Réinitialiser le formulaire
       setBillData({
@@ -189,7 +241,7 @@ const AddBillModal = ({ isOpen, onClose, onSave }) => {
           </div>
           
           <div className="form-group">
-            <label htmlFor="proof">Justificatif (optionnel)</label>
+            <label htmlFor="proof">Justificatif (obligatoire)*</label>
             <div className="file-input-container">
               <input 
                 type="file" 
@@ -198,12 +250,13 @@ const AddBillModal = ({ isOpen, onClose, onSave }) => {
                 accept=".jpg,.jpeg,.png,.pdf"
                 onChange={handleFileChange}
                 className="file-input"
+                required
               />
               <label htmlFor="proof" className="file-input-label">
                 <svg className="file-icon" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
                 </svg>
-                {billData.proof ? billData.proof.name : 'Choisir un fichier'}
+                {billData.proof ? billData.proof.name : 'Choisir un fichier *'}
               </label>
             </div>
             {billData.proof && (
@@ -219,7 +272,7 @@ const AddBillModal = ({ isOpen, onClose, onSave }) => {
                 </button>
               </div>
             )}
-            <small className="file-help">JPG, PNG ou PDF - Max 5MB</small>
+            <small className="file-help">JPG, PNG ou PDF - Max 5MB (Obligatoire)</small>
           </div>
           
           <div className="form-actions">

@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import '../Styles/Dashboard.css';
+import '../styles/Dashboard.css';
 import { BillsList } from '../Modals/Bills';
 import ProfileModal from '../Modals/ProfileModal';
 import { Line, Bar } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler } from 'chart.js';
-import { MdDashboard, MdReceipt, MdPerson, MdLogout, MdGridView } from 'react-icons/md';
-
-localStorage.setItem('token', "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MjM0ODc0YzBjMTk2MDUyNjg0ZjAyMCIsInJvbGUiOiJBZG1pbiIsImVtYWlsIjoiRHlsYW5AZ21haWwuY29tIiwiaWF0IjoxNzQ4MzQ3MDU3LCJleHAiOjE3NDg0MzM0NTd9.DEh3LgtbYUH4yigjFVRyBfGgBDOWsUxHAcwYfUYOokQ")
+import {MdReceipt, MdPerson, MdLogout, MdGridView } from 'react-icons/md';
+import { useNavigate } from 'react-router-dom';
 
 // Enregistrer les composants ChartJS nécessaires
 ChartJS.register(
@@ -21,17 +20,125 @@ ChartJS.register(
   Filler
 );
 
+// Fonction pour décoder un JWT
+const decodeJWT = (token) => {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.error('Erreur lors du décodage du JWT:', error);
+    return null;
+  }
+};
+
 // Composant principal Dashboard pour les utilisateurs réguliers
 function UserDashboard() {
   const [activePage, setActivePage] = useState('dashboard');
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   // État pour les données utilisateur
   const [userData, setUserData] = useState({
-    name: 'Jean Dupont',
-    email: 'jean.dupont@example.com',
-    role: 'user'
+    name: '',
+    email: '',
+    role: 'User'
   });
+
+  // Récupérer les informations de l'utilisateur connecté
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        console.log('Token trouvé:', token ? 'Oui' : 'Non');
+        
+        if (!token) {
+          console.log('Aucun token trouvé, redirection vers login');
+          navigate('/');
+          return;
+        }
+
+        // D'abord décoder le JWT pour extraire les informations utilisateur
+        const decodedToken = decodeJWT(token);
+        console.log('Token décodé dans UserDashboard:', decodedToken);
+
+        if (decodedToken) {
+          // Vérifier si l'utilisateur est admin et le rediriger si nécessaire
+          const userRole = decodedToken.role || decodedToken.Role;
+          if (userRole === 'admin' || userRole === 'Admin') {
+            console.log('Utilisateur admin détecté, redirection vers AdminDashboard');
+            navigate('/admin');
+            return;
+          }
+
+          // Définir les données utilisateur à partir du token
+          const userDataFromToken = {
+            name: decodedToken.name || decodedToken.nom || decodedToken.email || 'Utilisateur',
+            email: decodedToken.email || 'email@example.com',
+            role: userRole || 'User'
+          };
+          
+          console.log('Données utilisateur extraites du token:', userDataFromToken);
+          setUserData(userDataFromToken);
+        }
+
+        try {
+          console.log('Statut réponse auth/me:', response.status);
+
+          if (response.ok) {
+            const data = await response.json();
+            console.log('Données utilisateur récupérées depuis API:', data);
+            
+            // Mettre à jour avec les données de l'API si disponibles
+            const user = data.user || data;
+            setUserData({
+              name: user.name || user.nom || 'Utilisateur',
+              email: user.email || '',
+              role: user.role || user.Role || 'User'
+            });
+            return;
+          } else if (response.status === 401) {
+            // Token expiré ou invalide
+            console.log('Token invalide ou expiré, redirection vers login');
+            localStorage.removeItem('token');
+            navigate('/');
+            return;
+          }
+        } catch (apiError) {
+          console.log('Endpoint /auth/me non disponible, utilisation du token JWT:', apiError.message);
+        }
+
+        // Si on arrive ici et qu'on n'a pas de token décodé, il y a un problème
+        if (!decodedToken) {
+          console.log('Impossible de décoder le token, redirection vers login');
+          localStorage.removeItem('token');
+          navigate('/');
+        }
+      } catch (error) {
+        console.error('Erreur lors de la récupération des données utilisateur:', error);
+        // En cas d'erreur, essayer le token JWT
+        const token = localStorage.getItem('token');
+        if (token) {
+          const decodedToken = decodeJWT(token);
+          if (decodedToken) {
+            setUserData({
+              name: decodedToken.name || decodedToken.nom || decodedToken.email || 'Utilisateur',
+              email: decodedToken.email || 'email@example.com',
+              role: decodedToken.role || decodedToken.Role || 'User'
+            });
+          }
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, [navigate]);
 
   // Ouvrir le modal de profil
   const openProfileModal = () => {
@@ -158,6 +265,18 @@ function UserDashboard() {
     }
   };
 
+  // Afficher un indicateur de chargement pendant la récupération des données
+  if (loading) {
+    return (
+      <div className="dashboard-container">
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Chargement de votre profil...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="dashboard-container">
       <div className="dashboard-sidebar">
@@ -200,8 +319,9 @@ function UserDashboard() {
         
         <div className="sidebar-footer">
           <button className="logout-btn" onClick={() => {
+            console.log('Déconnexion utilisateur...');
             localStorage.removeItem('token');
-            window.location.href = '/login';
+            navigate('/');
           }}><MdLogout /> Déconnexion</button>
         </div>
       </div>
