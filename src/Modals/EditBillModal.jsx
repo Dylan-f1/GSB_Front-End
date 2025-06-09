@@ -29,7 +29,9 @@ const EditBillModal = ({ isOpen, onClose, bill, onSave }) => {
     amount: '',
     date: '',
     description: '',
-    status: 'Pending'
+    status: 'Pending',
+    proof: '',
+    merchant: ''
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -43,7 +45,9 @@ const EditBillModal = ({ isOpen, onClose, bill, onSave }) => {
       amount: bill.amount || '',
       date: formatDateForInput(bill.date),
       description: bill.description || '',
-      status: bill.status || 'Pending'
+      status: bill.status || 'Pending',
+      proof: bill.proof || '',
+      merchant: bill.merchant || ''
     });
     setErrors({});
   };
@@ -97,9 +101,45 @@ const EditBillModal = ({ isOpen, onClose, bill, onSave }) => {
     if (!formData.amount || parseFloat(formData.amount) <= 0) newErrors.amount = 'Le montant doit être supérieur à 0';
     if (!formData.date) newErrors.date = 'La date est requise';
     if (!formData.status) newErrors.status = 'Le statut est requis';
+    if (!formData.merchant) newErrors.merchant = 'Le marchand est requis';
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const updateBill = async (billId, billData) => {
+    try {
+      const token = localStorage.getItem('token');
+      console.log("billData dylan", billData);
+      if (!token) {
+        throw new Error('Token d\'authentification manquant');
+      }
+      
+      // Envoyer les données au backend en JSON
+      const response = await fetch(`http://localhost:3000/bills/${billId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(billData)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Erreur de la réponse:', errorText);
+        throw new Error(`Erreur HTTP: ${response.status} - ${errorText}`);
+      }
+
+      const updatedBill = await response.json();
+      console.log('Facture mise à jour:', updatedBill);
+      
+      return updatedBill;
+      
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour de la facture:', error);
+      throw error;
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -110,13 +150,29 @@ const EditBillModal = ({ isOpen, onClose, bill, onSave }) => {
     setIsSubmitting(true);
 
     try {
-      const updatedBill = {
-        ...bill,
-        ...formData,
-        amount: parseFloat(formData.amount)
+      const billId = bill._id || bill.id;
+      
+      // Préparer les données en objet JSON simple
+      const billData = {
+        date: formData.date,
+        amount: Number(formData.amount),
+        proof: formData.proof || '',
+        merchant: formData.merchant,
+        description: formData.description || '',
+        status: formData.status,
+        type: formData.type
       };
 
-      await onSave(updatedBill);
+      console.log('Données envoyées:', billData);
+
+      // Appeler la fonction updateBill
+      const updatedBill = await updateBill(billId, billData);
+
+      // Appeler onSave si fourni (pour mettre à jour la liste dans le parent)
+      if (onSave) {
+        await onSave(updatedBill);
+      }
+      
       onClose();
     } catch (error) {
       console.error('Erreur lors de la mise à jour:', error);
@@ -204,6 +260,22 @@ const EditBillModal = ({ isOpen, onClose, bill, onSave }) => {
               {errors.amount && <span className="error-text">{errors.amount}</span>}
             </div>
 
+            {/* Marchand */}
+            <div className="form-group">
+              <label htmlFor="merchant" className="form-label">Marchand *</label>
+              <input
+                type="text"
+                id="merchant"
+                name="merchant"
+                value={formData.merchant}
+                onChange={handleChange}
+                className={`form-input ${errors.merchant ? 'error' : ''}`}
+                placeholder="Nom du marchand ou établissement"
+                required
+              />
+              {errors.merchant && <span className="error-text">{errors.merchant}</span>}
+            </div>
+
             {/* Date */}
             <div className="form-group">
               <label htmlFor="date" className="form-label">Date *</label>
@@ -217,6 +289,20 @@ const EditBillModal = ({ isOpen, onClose, bill, onSave }) => {
                 required
               />
               {errors.date && <span className="error-text">{errors.date}</span>}
+            </div>
+
+            {/* Justificatif */}
+            <div className="form-group">
+              <label htmlFor="proof" className="form-label">Justificatif</label>
+              <input
+                type="text"
+                id="proof"
+                name="proof"
+                value={formData.proof}
+                onChange={handleChange}
+                className="form-input"
+                placeholder="URL ou chemin vers le justificatif (optionnel)"
+              />
             </div>
 
             {/* Statut */}
@@ -273,6 +359,7 @@ const EditBillModal = ({ isOpen, onClose, bill, onSave }) => {
                 type="submit" 
                 className="btn btn-primary"
                 disabled={isSubmitting}
+                onClick={handleSubmit}
               >
                 {isSubmitting ? (
                   <>

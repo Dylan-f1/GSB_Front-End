@@ -286,6 +286,7 @@ export function BillsList({ userRole = 'user' }) {
           isOpen={isEditModalOpen}
           onClose={closeEditModal}
           bill={billToEdit}
+          onSave={handleUpdateBill}
         />
       )}
         </div>
