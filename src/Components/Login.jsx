@@ -51,7 +51,7 @@ function Login({ onLogin }) {
     try {
       console.log('Tentative de connexion avec:', { email: formData.email });
       
-      const response = await fetch('http://localhost:3000/auth/login', {
+      const response = await fetch('https://gsb-back-end.onrender.com/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -144,7 +144,7 @@ function Login({ onLogin }) {
       
       // Gestion spécifique des erreurs réseau
       if (error.name === 'TypeError' && error.message.includes('fetch')) {
-        setError('Impossible de se connecter au serveur. Vérifiez que le serveur backend est démarré sur http://localhost:3000');
+        setError('Impossible de se connecter au serveur. Vérifiez que le serveur backend est démarré sur https://gsb-back-end.onrender.com');
       } else {
         setError(error.message || 'Erreur de connexion au serveur');
       }

@@ -116,7 +116,7 @@ const EditBillModal = ({ isOpen, onClose, bill, onSave }) => {
       }
       
       // Envoyer les données au backend en JSON
-      const response = await fetch(`http://localhost:3000/bills/${billId}`, {
+      const response = await fetch(`https://gsb-back-end.onrender.com/bills/${billId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

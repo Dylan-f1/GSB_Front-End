@@ -90,7 +90,7 @@ const AddBillModal = ({ isOpen, onClose, onSave }) => {
       }
       
       // Envoyer les données au backend avec FormData pour gérer les fichiers
-      const response = await fetch('http://localhost:3000/bills', {
+      const response = await fetch('https://gsb-back-end.onrender.com/bills', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
