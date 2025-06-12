@@ -30,8 +30,21 @@ function SignIn() {
     setSuccess('');
     setLoading(true);
 
+    // Validation côté client
+    if (!formData.email || !formData.password || !formData.name) {
+      setError('Veuillez remplir tous les champs');
+      setLoading(false);
+      return;
+    }
+
     try {
-      const response = await fetch('https://gsb-back-end.onrender.com/auth/register', {
+      console.log('Tentative d\'inscription avec:', { 
+        email: formData.email,
+        name: formData.name,
+        password: '***'
+      });
+
+      const response = await fetch('https://gsb-back-end.onrender.com/users', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -39,23 +52,44 @@ function SignIn() {
         body: JSON.stringify({
           name: formData.name,
           email: formData.email,
-          password: formData.password
+          password: formData.password,
+          role: 'user' // Ajout du rôle par défaut
         }),
       });
 
-      const data = await response.json();
+      console.log('Statut de la réponse:', response.status);
+
+      const responseText = await response.text();
+      console.log('Réponse brute du serveur:', responseText);
+
+      let data;
+      try {
+        data = responseText ? JSON.parse(responseText) : {};
+      } catch (e) {
+        console.error('Erreur de parsing JSON:', e);
+        throw new Error('Le serveur a renvoyé une réponse invalide');
+      }
 
       if (response.ok) {
+        console.log('Inscription réussie:', data);
         setSuccess('Compte créé avec succès ! Redirection vers la connexion...');
         setTimeout(() => {
           navigate('/');
         }, 2000);
       } else {
-        setError(data.message || 'Erreur lors de la création du compte');
+        if (response.status === 400) {
+          setError(data.message || 'Données d\'inscription invalides');
+        } else if (response.status === 409) {
+          setError('Un compte avec cet email existe déjà');
+        } else if (response.status === 500) {
+          setError('Erreur serveur. Veuillez réessayer plus tard.');
+        } else {
+          setError(data.message || 'Erreur lors de la création du compte');
+        }
       }
     } catch (error) {
       console.error('Erreur lors de l\'inscription:', error);
-      setError('Erreur de connexion au serveur');
+      setError(error.message || 'Erreur de connexion au serveur');
     } finally {
       setLoading(false);
     }
