@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MdArrowBack, MdSave, MdClose } from 'react-icons/md';
-import '../Styles/ProfileModal.css';
+import '../styles/ProfileModal.css';
 
 const ProfileModal = ({ isOpen, onClose, onSave, currentUser }) => {
   // États pour les champs du formulaire
