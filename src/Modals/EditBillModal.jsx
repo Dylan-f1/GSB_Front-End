@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import '../Styles/EditBillModal.css';
+import '../styles/EditBillModal.css';
 
 // Fonction utilitaire pour convertir la date en format YYYY-MM-DD
 const formatDateForInput = (dateString) => {
