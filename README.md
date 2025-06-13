@@ -1,12 +1,27 @@
-# React + Vite
+# GSB 
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Application front-end pour le projet GSB développée avec React.
 
-Currently, two official plugins are available:
+## Description
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Cette application web constitue l'interface utilisateur du système GSB. Elle permet aux utilisateurs de s'authentifier et de gérer leur bills dans l'application.
 
-## Expanding the ESLint configuration
+## Fonctionnalités
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- Système d'authentification complet
+- Inscription des utilisateurs
+- Connexion sécurisée
+- Interface utilisateur moderne et responsive
+- Gestion des rôles utilisateurs
+
+## Technologies Utilisées
+
+- React.js
+- React Router pour la navigation
+- React Icons pour l'interface utilisateur
+- CSS personnalisé pour le style
+- Communication avec une API REST (backend hébergé sur Render)
+
+L'application communique avec une API backend hébergée sur Render à l'adresse :
+`https://gsb-back-end.onrender.com`
+
