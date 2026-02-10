@@ -30,7 +30,7 @@ export function BillsList({ userRole = 'user' }) {
         
         console.log('Token utilisé pour bills:', authToken ? 'Présent' : 'Absent');
         
-        const response = await fetch('https://gsb-back-end.onrender.com/bills', {
+        const response = await fetch(`${API_URL}/bills`, {
           method: 'GET',  
           headers: {
             'Content-Type': 'application/json',
@@ -110,7 +110,7 @@ export function BillsList({ userRole = 'user' }) {
           throw new Error('Token d\'authentification manquant');
         }
         
-        const response = await fetch(`https://gsb-back-end.onrender.com/bills/${billId}`, {
+        const response = await fetch(`${API_URL}/bills/${billId}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${authToken}`,

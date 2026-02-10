@@ -44,7 +44,7 @@ function SignIn() {
         password: '***'
       });
 
-      const response = await fetch('https://gsb-back-end.onrender.com/users', {
+      const response = await fetch(`${API_URL}/users`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

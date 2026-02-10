@@ -22,6 +22,4 @@ Cette application web constitue l'interface utilisateur du système GSB. Elle pe
 - CSS personnalisé pour le style
 - Communication avec une API REST (backend hébergé sur Render)
 
-L'application communique avec une API backend hébergée sur Render à l'adresse :
-`https://gsb-back-end.onrender.com`
 
