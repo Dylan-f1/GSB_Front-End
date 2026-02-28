@@ -78,32 +78,6 @@ function AdminDashboard() {
           return;
         }
         
-        try {
-
-          if (response.ok) {
-            const data = await response.json();
-            const user = data.user || data;
-            const role = user.role || user.Role || 'user';
-            
-            console.log('Rôle utilisateur depuis API:', role);
-            setUserRole(role);
-            
-            // Vérifier si l'utilisateur est admin
-            if (role !== 'admin' && role !== 'Admin') {
-              console.log('Accès refusé: utilisateur non-admin');
-              navigate('/dashboard'); // Rediriger vers le dashboard utilisateur
-              return;
-            }
-            return; // Succès
-          } else if (response.status === 401) {
-            console.log('Token invalide, redirection vers login');
-            localStorage.removeItem('token');
-            navigate('/');
-            return;
-          }
-        } catch (apiError) {
-          console.log('Endpoint /auth/me non disponible, utilisation du token JWT:', apiError.message);
-        }
       } catch (error) {
         console.error('Erreur lors de la vérification d\'authentification:', error);
         navigate('/');

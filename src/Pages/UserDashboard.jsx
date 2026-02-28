@@ -86,32 +86,6 @@ function UserDashboard() {
           setUserData(userDataFromToken);
         }
 
-        try {
-          console.log('Statut réponse auth/me:', response.status);
-
-          if (response.ok) {
-            const data = await response.json();
-            console.log('Données utilisateur récupérées depuis API:', data);
-            
-            // Mettre à jour avec les données de l'API si disponibles
-            const user = data.user || data;
-            setUserData({
-              name: user.name || user.nom || 'Utilisateur',
-              email: user.email || '',
-              role: user.role || user.Role || 'User'
-            });
-            return;
-          } else if (response.status === 401) {
-            // Token expiré ou invalide
-            console.log('Token invalide ou expiré, redirection vers login');
-            localStorage.removeItem('token');
-            navigate('/');
-            return;
-          }
-        } catch (apiError) {
-          console.log('Endpoint /auth/me non disponible, utilisation du token JWT:', apiError.message);
-        }
-
         // Si on arrive ici et qu'on n'a pas de token décodé, il y a un problème
         if (!decodedToken) {
           console.log('Impossible de décoder le token, redirection vers login');
