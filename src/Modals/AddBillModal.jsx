@@ -10,12 +10,12 @@ const AddBillModal = ({ isOpen, onClose, onSave }) => {
     amount: '',
     description: '',
     merchant: '',
-    type: 'expense',
+    type: 'Transport',
     proof: null
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
-  
+
 
   // Réinitialiser le formulaire quand le modal se ferme
   React.useEffect(() => {
@@ -25,7 +25,7 @@ const AddBillModal = ({ isOpen, onClose, onSave }) => {
         amount: '',
         description: '',
         merchant: '',
-        type: 'expense',
+        type: 'Transport',
         proof: null
       });
       setError('');
@@ -208,21 +208,41 @@ const AddBillModal = ({ isOpen, onClose, onSave }) => {
           </div>
           
           <div className="form-group">
-            <input 
-              type="number" 
-              name="amount" 
-              placeholder="Montant" 
+            <label htmlFor="type">Type de dépense</label>
+            <select
+              id="type"
+              name="type"
+              value={billData.type}
+              onChange={handleChange}
+              className="form-select"
+              required
+            >
+              <option value="Transport">Transport</option>
+              <option value="Hébergement">Hébergement</option>
+              <option value="Repas">Repas</option>
+              <option value="Carburant">Carburant</option>
+              <option value="Divers">Divers</option>
+            </select>
+          </div>
+
+          <div className="form-group">
+            <input
+              type="number"
+              name="amount"
+              placeholder="Montant (€)"
               value={billData.amount}
               onChange={handleChange}
               required
+              min="0"
+              step="0.01"
             />
           </div>
-          
+
           <div className="form-group">
-            <input 
-              type="text" 
-              name="merchant" 
-              placeholder="Nom du marchand" 
+            <input
+              type="text"
+              name="merchant"
+              placeholder="Nom du marchand / fournisseur"
               value={billData.merchant}
               onChange={handleChange}
               required

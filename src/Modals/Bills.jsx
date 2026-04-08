@@ -20,51 +20,36 @@ export function BillsList({ userRole = 'user' }) {
       try {
         setLoading(true);
         setError(null);
-        
-        // Récupérer le token depuis localStorage
+
         const authToken = localStorage.getItem('token');
-        
-        if (!authToken) {
-          throw new Error('Token d\'authentification manquant');
-        }
-        
-        console.log('Token utilisé pour bills:', authToken ? 'Présent' : 'Absent');
-        
+        if (!authToken) throw new Error('Token d\'authentification manquant');
+
         const response = await fetch(`${API_URL}/bills`, {
-          method: 'GET',  
+          method: 'GET',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${authToken}`,
           },
         });
-        
-
-        console.log('Statut réponse bills:', response.status);
 
         if (!response.ok) {
-          if (response.status === 401) {
-            throw new Error('Token d\'authentification invalide ou expiré');
-          }
+          if (response.status === 401) throw new Error('Token d\'authentification invalide ou expiré');
           throw new Error(`Erreur HTTP: ${response.status}`);
         }
 
         const data = await response.json();
-        console.log('Données factures reçues:', data);
-        
-        // S'assurer que data est un tableau
         if (Array.isArray(data)) {
           setBills(data);
         } else if (data && Array.isArray(data.bills)) {
           setBills(data.bills);
         } else {
-          console.warn('Format de données inattendu:', data);
           setBills([]);
         }
-        
+
       } catch (e) {
         console.error('Erreur lors de la récupération des factures:', e);
         setError(e.message);
-        setBills([]); // S'assurer que bills reste un tableau même en cas d'erreur
+        setBills([]);
       } finally {
         setLoading(false);
       }
@@ -196,8 +181,8 @@ export function BillsList({ userRole = 'user' }) {
                 <th>ID</th>
                 <th>Date</th>
                 <th>Type</th>
-                <th>Amount</th>
-                <th>Status</th>
+                <th>Montant</th>
+                <th>Statut</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -222,7 +207,7 @@ export function BillsList({ userRole = 'user' }) {
                     })()}
                   </td>
                   <td className="bill-type">{bill.type}</td>
-                  <td className="bill-amount">${bill.amount.toFixed(2)}</td>
+                  <td className="bill-amount">{bill.amount.toFixed(2)} €</td>
                   <td>
                     <span className={`bill-status status-${bill.status.toLowerCase()}`}>
                       {bill.status}

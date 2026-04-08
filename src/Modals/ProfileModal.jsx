@@ -1,24 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { MdArrowBack, MdSave, MdClose } from 'react-icons/md';
+import { MdSave, MdClose, MdPerson, MdEmail, MdLock, MdCheckCircle, MdError } from 'react-icons/md';
 import '../styles/ProfileModal.css';
 
 const ProfileModal = ({ isOpen, onClose, onSave, currentUser }) => {
-  // États pour les champs du formulaire
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('');
-  const [feedbackMessage, setFeedbackMessage] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [feedback, setFeedback] = useState(null); // { type: 'success'|'error', message }
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Mettre à jour les champs lorsque currentUser change
   useEffect(() => {
     if (currentUser) {
       setName(currentUser.name || '');
       setEmail(currentUser.email || '');
-      setRole(currentUser.role || 'user');
-      // Ne pas définir le mot de passe ici pour des raisons de sécurité
       setPassword('');
+      setConfirmPassword('');
+      setFeedback(null);
     }
   }, [currentUser, isOpen]);
 
@@ -26,133 +24,169 @@ const ProfileModal = ({ isOpen, onClose, onSave, currentUser }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setFeedback(null);
+
+    if (password && password !== confirmPassword) {
+      setFeedback({ type: 'error', message: 'Les mots de passe ne correspondent pas.' });
+      return;
+    }
+
     setIsSubmitting(true);
-    setFeedbackMessage('');
 
     try {
-      // Préparation des données à envoyer
-      const updatedUserData = {
+      const token = localStorage.getItem('token');
+      const body = {
         name,
-        email,
-        role
+        newEmail: email,
+        role: currentUser.role
       };
-      
-      // Si un mot de passe est fourni, l'inclure
-      if (password) {
-        updatedUserData.password = password;
+      if (password) body.password = password;
+
+      const response = await fetch(`${API_URL}/users?email=${encodeURIComponent(currentUser.email)}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(body)
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.message || `Erreur ${response.status}`);
       }
 
-      // Simuler une requête API (vous pourriez remplacer ceci par un vrai appel API)
-      // Dans un contexte réel, vous enverriez ces données à votre API
+      setFeedback({ type: 'success', message: 'Profil mis à jour avec succès !' });
 
-      // Mettre à jour l'état du composant parent
       if (onSave) {
-        onSave(updatedUserData);
-        setFeedbackMessage('Profil mis à jour avec succès!');
-      } else {
-        // Fallback si onSave n'est pas fourni
-        console.log('Profil mis à jour:', updatedUserData);
-        onClose();
+        onSave({ name, email, role: currentUser.role });
       }
     } catch (error) {
-      console.error('Erreur lors de la mise à jour du profil:', error);
-      setFeedbackMessage('Erreur lors de la mise à jour du profil');
+      setFeedback({ type: 'error', message: error.message || 'Erreur lors de la mise à jour.' });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="modal-overlay">
-      <div className="profile-modal">
-        <div className="profile-header">
-          <button className="back-button" onClick={onClose}>
-            <MdArrowBack />
-          </button>
+    <div className="pm-overlay" onClick={onClose}>
+      <div className="pm-modal" onClick={(e) => e.stopPropagation()}>
+
+        {/* Header */}
+        <div className="pm-header">
           <h2>Modifier le profil</h2>
+          <button className="pm-close-btn" onClick={onClose} aria-label="Fermer">
+            <MdClose />
+          </button>
         </div>
 
-                  <div className="profile-content">
-          <div className="profile-avatar-container">
-            <div className="profile-avatar-large">
-              <svg 
-                viewBox="0 0 24 24" 
-                fill="currentColor" 
-              >
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" />
-              </svg>
-            </div>
-            <div className="profile-user-info">
-              <h3>{currentUser?.name || 'Utilisateur'}</h3>
-              <p className="user-role">{currentUser?.role === 'admin' ? 'Administrateur' : 'Utilisateur'}</p>
-              <p className="user-email">{currentUser?.email}</p>
-            </div>
+        {/* Avatar + infos actuelles */}
+        <div className="pm-avatar-section">
+          <div className="pm-avatar">
+            <MdPerson />
+          </div>
+          <div className="pm-avatar-info">
+            <strong>{currentUser?.name || 'Utilisateur'}</strong>
+            <span className="pm-role-badge">
+              {currentUser?.role === 'admin' ? 'Administrateur' : 'Utilisateur'}
+            </span>
+            <span className="pm-email">{currentUser?.email}</span>
+          </div>
+        </div>
+
+        {/* Feedback */}
+        {feedback && (
+          <div className={`pm-feedback pm-feedback--${feedback.type}`}>
+            {feedback.type === 'success' ? <MdCheckCircle /> : <MdError />}
+            <span>{feedback.message}</span>
+          </div>
+        )}
+
+        {/* Formulaire */}
+        <form onSubmit={handleSubmit} className="pm-form">
+          <div className="pm-field">
+            <label htmlFor="pm-name">
+              <MdPerson className="pm-field-icon" /> Nom
+            </label>
+            <input
+              id="pm-name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Votre nom"
+              required
+            />
           </div>
 
-          {feedbackMessage && (
-            <div className={`feedback-message ${feedbackMessage.includes('Erreur') ? 'error' : 'success'}`}>
-              {feedbackMessage}
-            </div>
-          )}
+          <div className="pm-field">
+            <label htmlFor="pm-email">
+              <MdEmail className="pm-field-icon" /> Email
+            </label>
+            <input
+              id="pm-email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="votre@email.com"
+              required
+            />
+          </div>
 
-          <form onSubmit={handleSubmit} className="profile-form">
-            <div className="form-group">
-              <label htmlFor="name">Nom</label>
-              <input
-                type="text"
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Nom"
-                required
-              />
-            </div>
+          <div className="pm-divider">
+            <span>Changer le mot de passe (optionnel)</span>
+          </div>
 
-            <div className="form-group">
-              <label htmlFor="email">Email</label>
-              <input
-                type="email"
-                id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="votre-email@exemple.com"
-                required
-              />
-            </div>
+          <div className="pm-field">
+            <label htmlFor="pm-password">
+              <MdLock className="pm-field-icon" /> Nouveau mot de passe
+            </label>
+            <input
+              id="pm-password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Laisser vide pour ne pas changer"
+            />
+          </div>
 
-            <div className="form-group">
-              <label htmlFor="password">Mot de passe</label>
-              <input
-                type="password"
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Laissez vide pour ne pas changer"
-              />
-            </div>
+          <div className="pm-field">
+            <label htmlFor="pm-confirm">
+              <MdLock className="pm-field-icon" /> Confirmer le mot de passe
+            </label>
+            <input
+              id="pm-confirm"
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Répéter le mot de passe"
+            />
+          </div>
 
-            <div className="profile-actions">
-              <button 
-                type="button" 
-                className="cancel-button" 
-                onClick={onClose}
-                disabled={isSubmitting}
-              >
-                Annuler <MdClose />
-              </button>
-              <button 
-                type="submit" 
-                className="save-button"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? 'Enregistrement...' : 'Enregistrer'} {!isSubmitting && <MdSave />}
-              </button>
-            </div>
-          </form>
-        </div>
+          <div className="pm-actions">
+            <button
+              type="button"
+              className="pm-btn pm-btn--cancel"
+              onClick={onClose}
+              disabled={isSubmitting}
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              className="pm-btn pm-btn--save"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <span className="pm-spinner"></span>
+              ) : (
+                <><MdSave /> Enregistrer</>
+              )}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
 };
 
-export default ProfileModal; 
+export default ProfileModal;

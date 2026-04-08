@@ -1,26 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import '../styles/Dashboard.css';
 import { BillsList } from '../Modals/Bills';
 import ProfileModal from '../Modals/ProfileModal';
 import { Line, Bar } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, Filler } from 'chart.js';
-import {MdReceipt, MdPerson, MdLogout, MdGridView } from 'react-icons/md';
+import { MdReceipt, MdPerson, MdLogout, MdGridView, MdTrendingUp, MdAccessTime, MdCheckCircle } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
 
-// Enregistrer les composants ChartJS nécessaires
 ChartJS.register(
-  CategoryScale, 
-  LinearScale, 
-  PointElement, 
-  LineElement, 
-  BarElement, 
-  Title, 
-  Tooltip, 
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
   Legend,
   Filler
 );
 
-// Fonction pour décoder un JWT
 const decodeJWT = (token) => {
   try {
     const base64Url = token.split('.')[1];
@@ -35,66 +33,47 @@ const decodeJWT = (token) => {
   }
 };
 
-// Composant principal Dashboard pour les utilisateurs réguliers
 function UserDashboard() {
   const [activePage, setActivePage] = useState('dashboard');
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [bills, setBills] = useState([]);
   const navigate = useNavigate();
 
-  // État pour les données utilisateur
   const [userData, setUserData] = useState({
     name: '',
     email: '',
     role: 'User'
   });
 
-  // Récupérer les informations de l'utilisateur connecté
   useEffect(() => {
     const fetchUserData = async () => {
       try {
         const token = localStorage.getItem('token');
-        console.log('Token trouvé:', token ? 'Oui' : 'Non');
-        
         if (!token) {
-          console.log('Aucun token trouvé, redirection vers login');
           navigate('/');
           return;
         }
 
-        // D'abord décoder le JWT pour extraire les informations utilisateur
         const decodedToken = decodeJWT(token);
-        console.log('Token décodé dans UserDashboard:', decodedToken);
-
         if (decodedToken) {
-          // Vérifier si l'utilisateur est admin et le rediriger si nécessaire
           const userRole = decodedToken.role || decodedToken.Role;
           if (userRole === 'admin' || userRole === 'Admin') {
-            console.log('Utilisateur admin détecté, redirection vers AdminDashboard');
             navigate('/admin');
             return;
           }
 
-          // Définir les données utilisateur à partir du token
-          const userDataFromToken = {
+          setUserData({
             name: decodedToken.name || decodedToken.nom || decodedToken.email || 'Utilisateur',
             email: decodedToken.email || 'email@example.com',
             role: userRole || 'User'
-          };
-          
-          console.log('Données utilisateur extraites du token:', userDataFromToken);
-          setUserData(userDataFromToken);
-        }
-
-        // Si on arrive ici et qu'on n'a pas de token décodé, il y a un problème
-        if (!decodedToken) {
-          console.log('Impossible de décoder le token, redirection vers login');
+          });
+        } else {
           localStorage.removeItem('token');
           navigate('/');
         }
       } catch (error) {
         console.error('Erreur lors de la récupération des données utilisateur:', error);
-        // En cas d'erreur, essayer le token JWT
         const token = localStorage.getItem('token');
         if (token) {
           const decodedToken = decodeJWT(token);
@@ -114,124 +93,251 @@ function UserDashboard() {
     fetchUserData();
   }, [navigate]);
 
-  // Ouvrir le modal de profil
-  const openProfileModal = () => {
-    setIsProfileModalOpen(true);
-  };
+  // Récupérer les factures pour alimenter les graphiques
+  useEffect(() => {
+    if (loading) return;
 
-  // Fermer le modal de profil
-  const closeProfileModal = () => {
-    setIsProfileModalOpen(false);
-  };
+    const fetchBillsForCharts = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
 
-  // Mettre à jour les données utilisateur
+        const response = await fetch(`${API_URL}/bills`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setBills(Array.isArray(data) ? data : (data.bills || []));
+        }
+      } catch (error) {
+        console.error('Erreur chargement factures pour graphiques:', error);
+      }
+    };
+
+    fetchBillsForCharts();
+  }, [loading]);
+
+  // Calculer les données des graphiques à partir des factures réelles
+  const chartData = useMemo(() => {
+    const dayNames = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+    const today = new Date();
+
+    // Construire les 7 derniers jours
+    const last7Days = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      last7Days.push(d);
+    }
+
+    const labels = last7Days.map(d => dayNames[d.getDay()]);
+    const amountByDay = new Array(7).fill(0);
+    const countByDay = new Array(7).fill(0);
+
+    bills.forEach(bill => {
+      const billDate = new Date(bill.date);
+      if (isNaN(billDate.getTime())) return;
+
+      for (let i = 0; i < 7; i++) {
+        const d = last7Days[i];
+        if (
+          billDate.getDate() === d.getDate() &&
+          billDate.getMonth() === d.getMonth() &&
+          billDate.getFullYear() === d.getFullYear()
+        ) {
+          amountByDay[i] += bill.amount || 0;
+          countByDay[i]++;
+          break;
+        }
+      }
+    });
+
+    const totalAmount = bills.reduce((sum, b) => sum + (b.amount || 0), 0);
+    const weeklyTotal = amountByDay.reduce((sum, a) => sum + a, 0);
+    const pendingCount = bills.filter(b => b.status === 'Pending').length;
+    const approvedCount = bills.filter(b => b.status === 'Approved').length;
+
+    return {
+      labels,
+      amountByDay,
+      countByDay,
+      totalAmount,
+      weeklyTotal,
+      pendingCount,
+      approvedCount,
+      totalCount: bills.length
+    };
+  }, [bills]);
+
+  const openProfileModal = () => setIsProfileModalOpen(true);
+  const closeProfileModal = () => setIsProfileModalOpen(false);
+
   const handleUpdateUserData = (updatedUserData) => {
-    setUserData(prevData => ({
-      ...prevData,
-      ...updatedUserData
-    }));
-    console.log('Données utilisateur mises à jour:', updatedUserData);
+    setUserData(prev => ({ ...prev, ...updatedUserData }));
     closeProfileModal();
   };
 
-  // Données pour le graphique linéaire
   const lineData = {
-    labels: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
+    labels: chartData.labels,
     datasets: [
       {
-        label: 'Revenu',
-        data: [800, 950, 1000, 1250, 1100, 1300, 1250],
+        label: 'Montant (€)',
+        data: chartData.amountByDay,
         fill: true,
-        backgroundColor: 'rgba(75, 192, 192, 0.2)',
-        borderColor: 'rgba(75, 192, 192, 1)',
+        backgroundColor: 'rgba(51, 102, 255, 0.12)',
+        borderColor: 'rgba(51, 102, 255, 1)',
         tension: 0.4,
+        pointBackgroundColor: 'rgba(51, 102, 255, 1)',
+        pointBorderColor: '#fff',
+        pointRadius: 4,
       },
     ],
   };
 
   const lineOptions = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
-      legend: {
-        display: false,
-      },
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: (ctx) => ` ${ctx.parsed.y.toFixed(2)} €`
+        }
+      }
     },
     scales: {
       y: {
         beginAtZero: true,
+        grid: { color: 'rgba(255,255,255,0.05)' },
+        ticks: { color: '#a3b3cc', callback: (v) => `${v}€` }
       },
+      x: {
+        grid: { color: 'rgba(255,255,255,0.05)' },
+        ticks: { color: '#a3b3cc' }
+      }
     },
   };
 
-  // Données pour le graphique à barres
   const barData = {
-    labels: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
+    labels: chartData.labels,
     datasets: [
       {
-        label: 'Ventes',
-        data: [20, 35, 25, 45, 30, 40, 35],
-        backgroundColor: 'rgba(54, 162, 235, 0.8)',
+        label: 'Factures',
+        data: chartData.countByDay,
+        backgroundColor: 'rgba(0, 200, 83, 0.7)',
+        borderRadius: 6,
+        borderSkipped: false,
       },
     ],
   };
 
   const barOptions = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
-      legend: {
-        display: false,
-      },
+      legend: { display: false },
     },
     scales: {
       y: {
         beginAtZero: true,
+        grid: { color: 'rgba(255,255,255,0.05)' },
+        ticks: { color: '#a3b3cc', stepSize: 1 }
       },
+      x: {
+        grid: { color: 'rgba(255,255,255,0.05)' },
+        ticks: { color: '#a3b3cc' }
+      }
     },
   };
 
-  // Composant DashboardContent
   const DashboardContent = () => (
     <div className="dashboard-content">
-      <div className="dashboard-card revenue-card">
-        <div className="card-header">
-          <h3>1250€</h3>
-          <p className="card-subtitle">Revenu hebdomadaire</p>
+      {/* Cartes statistiques */}
+      <div className="stats-grid">
+        <div className="stat-mini-card">
+          <div className="stat-mini-icon bills-mini-icon">
+            <MdReceipt />
+          </div>
+          <div className="stat-mini-info">
+            <h4>{chartData.totalCount}</h4>
+            <p>Total Factures</p>
+          </div>
         </div>
-        <div className="chart-container">
-          <Line data={lineData} options={lineOptions} />
+        <div className="stat-mini-card">
+          <div className="stat-mini-icon revenue-mini-icon">
+            <MdTrendingUp />
+          </div>
+          <div className="stat-mini-info">
+            <h4>{chartData.totalAmount.toFixed(0)}€</h4>
+            <p>Montant Total</p>
+          </div>
         </div>
-        <div className="card-footer">
-          <button className="details-btn" onClick={() => {
-            setActivePage('bills');
-          }}>Détails</button>
+        <div className="stat-mini-card">
+          <div className="stat-mini-icon pending-mini-icon">
+            <MdAccessTime />
+          </div>
+          <div className="stat-mini-info">
+            <h4>{chartData.pendingCount}</h4>
+            <p>En Attente</p>
+          </div>
+        </div>
+        <div className="stat-mini-card">
+          <div className="stat-mini-icon approved-mini-icon">
+            <MdCheckCircle />
+          </div>
+          <div className="stat-mini-info">
+            <h4>{chartData.approvedCount}</h4>
+            <p>Approuvées</p>
+          </div>
         </div>
       </div>
 
-      <div className="dashboard-card performance-card">
-        <div className="card-header">
-          <h3>Performance des ventes</h3>
+      {/* Graphiques */}
+      <div className="charts-row">
+        <div className="dashboard-card revenue-card">
+          <div className="card-header">
+            <h3>{chartData.weeklyTotal.toFixed(0)}€</h3>
+            <p className="card-subtitle">Montant — 7 derniers jours</p>
+          </div>
+          <div className="chart-container">
+            <Line data={lineData} options={lineOptions} />
+          </div>
+          <div className="card-footer">
+            <button className="details-btn" onClick={() => setActivePage('bills')}>
+              Voir les factures
+            </button>
+          </div>
         </div>
-        <div className="chart-container">
-          <Bar data={barData} options={barOptions} />
-        </div>
-        <div className="stats-info">
-          <p><strong>20%</strong> d'augmentation des ventes par rapport à la semaine dernière</p>
+
+        <div className="dashboard-card performance-card">
+          <div className="card-header">
+            <h3>Factures par jour</h3>
+            <p className="card-subtitle">7 derniers jours</p>
+          </div>
+          <div className="chart-container">
+            <Bar data={barData} options={barOptions} />
+          </div>
+          <div className="stats-info">
+            <p>
+              <strong>{chartData.pendingCount}</strong>{' '}
+              facture{chartData.pendingCount !== 1 ? 's' : ''} en attente de validation
+            </p>
+          </div>
         </div>
       </div>
     </div>
   );
 
-  // Fonction pour rendre le contenu en fonction de la page active
   const renderContent = () => {
-    switch(activePage) {
+    switch (activePage) {
       case 'bills':
         return <BillsList userRole={userData.role} />;
       case 'profile':
-        // Au lieu d'afficher la page profil, on ouvre le modal
-        // et on affiche le dashboard
-        if (!isProfileModalOpen) {
-          openProfileModal();
-        }
+        if (!isProfileModalOpen) openProfileModal();
         return <DashboardContent />;
       case 'dashboard':
       default:
@@ -239,7 +345,6 @@ function UserDashboard() {
     }
   };
 
-  // Afficher un indicateur de chargement pendant la récupération des données
   if (loading) {
     return (
       <div className="dashboard-container">
@@ -261,13 +366,10 @@ function UserDashboard() {
             <span className="logo-b">B</span>
           </div>
         </div>
-        
+
         <div className="user-profile">
           <div className="profile-avatar">
-            <svg 
-              viewBox="0 0 24 24" 
-              fill="currentColor" 
-            >
+            <svg viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z" />
             </svg>
           </div>
@@ -276,27 +378,34 @@ function UserDashboard() {
             <p>{userData.role === 'admin' ? 'Administrateur' : 'Utilisateur'}</p>
           </div>
         </div>
-        
+
         <nav className="sidebar-nav">
           <ul>
             <li className={activePage === 'dashboard' ? 'active' : ''}>
-              <a href="#" onClick={() => setActivePage('dashboard')}><MdGridView /> Dashboard</a>
+              <a href="#" onClick={(e) => { e.preventDefault(); setActivePage('dashboard'); }}>
+                <MdGridView /> Dashboard
+              </a>
             </li>
             <li className={activePage === 'bills' ? 'active' : ''}>
-              <a href="#" onClick={() => { setActivePage('bills'); }}><MdReceipt /> Bills</a>
+              <a href="#" onClick={(e) => { e.preventDefault(); setActivePage('bills'); }}>
+                <MdReceipt /> Bills
+              </a>
             </li>
             <li className={activePage === 'profile' ? 'active' : ''}>
-              <a href="#" onClick={() => { setActivePage('profile'); }}><MdPerson /> Profil</a>
+              <a href="#" onClick={(e) => { e.preventDefault(); setActivePage('profile'); }}>
+                <MdPerson /> Profil
+              </a>
             </li>
           </ul>
         </nav>
-        
+
         <div className="sidebar-footer">
           <button className="logout-btn" onClick={() => {
-            console.log('Déconnexion utilisateur...');
             localStorage.removeItem('token');
             navigate('/');
-          }}><MdLogout /> Déconnexion</button>
+          }}>
+            <MdLogout /> Déconnexion
+          </button>
         </div>
       </div>
 
@@ -314,22 +423,18 @@ function UserDashboard() {
 
         {renderContent()}
       </div>
-      
-      {/* Modal pour éditer le profil */}
-      <ProfileModal 
-        isOpen={isProfileModalOpen} 
+
+      <ProfileModal
+        isOpen={isProfileModalOpen}
         onClose={() => {
           closeProfileModal();
-          // Retourner au dashboard si on était sur la page profil
-          if (activePage === 'profile') {
-            setActivePage('dashboard');
-          }
-        }} 
+          if (activePage === 'profile') setActivePage('dashboard');
+        }}
         onSave={handleUpdateUserData}
-        currentUser={userData} 
+        currentUser={userData}
       />
     </div>
   );
 }
 
-export default UserDashboard; 
+export default UserDashboard;
